@@ -1,35 +1,39 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const { Configuration, OpenAIApi } = require('openai');
-
+const express = require("express");
+const OpenAI = require("openai");
+const bodyParser = require("body-parser");
+const dotenv = require("dotenv");
 dotenv.config();
+
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(bodyParser.json());
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
-app.post('/chat', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).send({ error: 'Message is required' });
-
+app.post("/chat", async (req, res) => {
   try {
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: message }],
+    const userMessage = req.body.message;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: userMessage }],
     });
-    res.send({ reply: completion.data.choices[0].message.content });
-  } catch (err) {
-    res.status(500).send({ error: 'Something went wrong' });
+
+    const botReply = response.choices[0].message.content;
+    res.json({ reply: botReply });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ error: "Something went wrong!" });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('VOXA.ai is live!');
+app.get("/", (req, res) => {
+  res.send("Welcome to VOXA.ai chatbot!");
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
